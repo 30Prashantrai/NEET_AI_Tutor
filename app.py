@@ -308,22 +308,28 @@ def submit_question(prompt: str, subject: str, chapter: str, language: str, retr
 
 def render_voice_input(subject: str, chapter: str, language: str, retrieval_k: int) -> None:
     with st.expander("Voice question", expanded=False):
+        st.caption(
+            "Step 1: click Start listening and allow microphone access. "
+            "Step 2: speak your question and stop listening. "
+            "Step 3: check the transcript, then ask."
+        )
         col_a, col_b = st.columns([1, 1])
         with col_a:
             voice_locale_label = st.selectbox("Talk language / accent", list(VOICE_LOCALES.keys()))
         with col_b:
-            st.caption("Allow microphone access in your browser, then speak your NEET question.")
+            st.caption("Chrome or Edge on HTTPS works best. Some mobile browsers may not support speech recognition.")
 
         transcript = speech_to_text(
             language=VOICE_LOCALES[voice_locale_label],
-            start_prompt="Start voice input",
-            stop_prompt="Stop voice input",
-            just_once=True,
+            start_prompt="Start listening",
+            stop_prompt="Stop listening",
+            just_once=False,
             use_container_width=True,
             key="voice_stt",
         )
         if transcript:
             st.session_state.voice_question = transcript
+            st.success("Voice transcript captured. Review it below, then send it.")
 
         st.text_area(
             "Voice transcript",
@@ -332,7 +338,10 @@ def render_voice_input(subject: str, chapter: str, language: str, retrieval_k: i
             height=90,
         )
         if st.button("Ask voice question", use_container_width=True):
-            submit_question(st.session_state.voice_question, subject, chapter, language, retrieval_k)
+            if st.session_state.voice_question.strip():
+                submit_question(st.session_state.voice_question, subject, chapter, language, retrieval_k)
+            else:
+                st.warning("No voice transcript yet. Click Start listening first, speak, then stop listening.")
 
 
 def render_chat(subject: str, chapter: str, language: str, retrieval_k: int) -> None:
