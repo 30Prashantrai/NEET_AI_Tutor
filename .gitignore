@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+.streamlit/secrets.toml
+embeddings/*
+!embeddings/.gitkeep
+pdfs/*
+!pdfs/.gitkeep
+data/*.json
+data/*.csv
