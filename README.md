@@ -16,6 +16,7 @@ The app does **not** scrape copyrighted websites. It only learns from user-uploa
 - Send retrieved context to Gemini for teacher-style answers.
 - Show step-by-step solutions, formulas, wrong-option analysis, shortcuts, confidence, and source references.
 - Support English, Hindi, and Nepali explanations.
+- Ask by voice with language/accent selection for English India, English US, English UK, Hindi India, and Nepali Nepal.
 - Provide chat history, bookmarks, favorite chats, daily quiz, mock tests, analytics, and leaderboard.
 - Use a dark, mobile-responsive Streamlit UI.
 

@@ -7,6 +7,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from dotenv import load_dotenv
+from streamlit_mic_recorder import speech_to_text
 
 from chatbot.gemini_client import generate_answer
 from chatbot.rag import answer_question
@@ -23,6 +24,15 @@ from utils.vector_store import add_chunks, collection_stats
 
 
 load_dotenv()
+
+
+VOICE_LOCALES = {
+    "English - India": "en-IN",
+    "English - United States": "en-US",
+    "English - United Kingdom": "en-GB",
+    "Hindi - India": "hi-IN",
+    "Nepali - Nepal": "ne-NP",
+}
 
 st.set_page_config(
     page_title="NEET AI Tutor",
@@ -143,6 +153,7 @@ def init_state() -> None:
     st.session_state.setdefault("last_sources", [])
     st.session_state.setdefault("quiz", "")
     st.session_state.setdefault("daily_quiz", "")
+    st.session_state.setdefault("voice_question", "")
 
 
 def api_key_ready() -> bool:
@@ -257,12 +268,8 @@ def render_sources() -> None:
             st.caption(source.text[:450] + ("..." if len(source.text) > 450 else ""))
 
 
-def render_chat(subject: str, chapter: str, language: str, retrieval_k: int) -> None:
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    prompt = st.chat_input("Ask a NEET question, e.g. Explain projectile motion PYQ shortcut")
+def submit_question(prompt: str, subject: str, chapter: str, language: str, retrieval_k: int) -> None:
+    prompt = prompt.strip()
     if not prompt:
         return
 
@@ -297,6 +304,49 @@ def render_chat(subject: str, chapter: str, language: str, retrieval_k: int) -> 
                 error = f"I could not answer yet: {exc}"
                 st.error(error)
                 st.session_state.messages.append({"role": "assistant", "content": error})
+
+
+def render_voice_input(subject: str, chapter: str, language: str, retrieval_k: int) -> None:
+    with st.expander("Voice question", expanded=False):
+        col_a, col_b = st.columns([1, 1])
+        with col_a:
+            voice_locale_label = st.selectbox("Talk language / accent", list(VOICE_LOCALES.keys()))
+        with col_b:
+            st.caption("Allow microphone access in your browser, then speak your NEET question.")
+
+        transcript = speech_to_text(
+            language=VOICE_LOCALES[voice_locale_label],
+            start_prompt="Start voice input",
+            stop_prompt="Stop voice input",
+            just_once=True,
+            use_container_width=True,
+            key="voice_stt",
+        )
+        if transcript:
+            st.session_state.voice_question = transcript
+
+        st.text_area(
+            "Voice transcript",
+            key="voice_question",
+            placeholder="Your spoken question will appear here. You can edit it before sending.",
+            height=90,
+        )
+        if st.button("Ask voice question", use_container_width=True):
+            submit_question(st.session_state.voice_question, subject, chapter, language, retrieval_k)
+
+
+def render_chat(subject: str, chapter: str, language: str, retrieval_k: int) -> None:
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    render_voice_input(subject, chapter, language, retrieval_k)
+
+    prompt = st.chat_input("Ask a NEET question, e.g. Explain projectile motion PYQ shortcut")
+    if not prompt:
+        return
+
+    submit_question(prompt, subject, chapter, language, retrieval_k)
 
 
 def render_mock_test(subject: str, chapter: str, language: str) -> None:
