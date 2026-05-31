@@ -10,10 +10,10 @@ The app does **not** scrape copyrighted websites. It only learns from user-uploa
 - Extract text with PyMuPDF, with pdfplumber fallback.
 - Detect subject, chapter, question number, options, answer markers, and explanation markers where possible.
 - Chunk NEET material into retrieval-friendly records.
-- Generate embeddings with Gemini by default, with optional Sentence Transformers support.
+- Generate local Chroma embeddings by default, with optional Sentence Transformers or Gemini embedding support.
 - Store vectors in ChromaDB.
 - Retrieve similar NEET questions and explanations.
-- Send retrieved context to Gemini for teacher-style answers.
+- Send retrieved context to Grok/xAI for teacher-style answers.
 - Show step-by-step solutions, formulas, wrong-option analysis, shortcuts, confidence, and source references.
 - Support English, Hindi, and Nepali explanations.
 - Ask by voice with language/accent selection for English India, English US, English UK, Hindi India, and Nepali Nepal.
@@ -47,8 +47,10 @@ pip install -r requirements.txt
 Create `.env`:
 
 ```env
-GEMINI_API_KEY=your_google_gemini_api_key
-EMBEDDING_PROVIDER=gemini
+XAI_API_KEY=your_xai_grok_api_key
+LLM_PROVIDER=xai
+XAI_MODEL=grok-4.3
+EMBEDDING_PROVIDER=local
 ```
 
 Run:
@@ -62,7 +64,7 @@ streamlit run app.py
 Default:
 
 ```env
-EMBEDDING_PROVIDER=gemini
+EMBEDDING_PROVIDER=local
 ```
 
 Optional local Sentence Transformers mode:
@@ -75,7 +77,7 @@ pip install sentence-transformers
 EMBEDDING_PROVIDER=sentence_transformers
 ```
 
-Gemini mode is lighter for Streamlit Community Cloud. Sentence Transformers mode is useful for local/offline-style embedding workflows, but it can make cloud builds heavier.
+The default local mode uses Chroma's ONNX MiniLM embedding function, so RAG retrieval does not require a Gemini API key. Sentence Transformers mode is useful for local embedding workflows, but it can make cloud builds heavier.
 
 ## Streamlit Cloud Deployment
 
@@ -88,8 +90,10 @@ Gemini mode is lighter for Streamlit Community Cloud. Sentence Transformers mode
 7. Add secrets:
 
 ```toml
-GEMINI_API_KEY = "your_google_gemini_api_key"
-EMBEDDING_PROVIDER = "gemini"
+XAI_API_KEY = "your_xai_grok_api_key"
+LLM_PROVIDER = "xai"
+XAI_MODEL = "grok-4.3"
+EMBEDDING_PROVIDER = "local"
 ```
 
 8. Click **Deploy**.
@@ -110,6 +114,7 @@ EMBEDDING_PROVIDER = "gemini"
 ## Notes
 
 - Upload only documents you have permission to use.
+- xAI/Grok API access may require billing or trial credits in the xAI console. It is not guaranteed to be unlimited free usage.
 - Streamlit Cloud file storage may reset on redeploy, so keep your original PDFs available.
-- Large PDF sets may take time to embed because each chunk is sent to the embedding provider.
+- Large PDF sets may take time to embed on first upload because Chroma may download or initialize its local embedding model.
 - For production at school scale, use persistent object storage and a hosted vector database.

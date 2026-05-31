@@ -7,14 +7,12 @@ from uuid import uuid4
 
 import chromadb
 from chromadb.api.types import Documents, EmbeddingFunction, Embeddings
-from google.genai import types
-
-from chatbot.gemini_client import get_gemini_client
 
 from utils.text_processing import TextChunk
 
 
 CHROMA_DIR = Path("embeddings/chroma")
+LOCAL_EMBEDDING_CACHE_DIR = Path("embeddings/chroma_onnx_cache")
 COLLECTION_NAME = "neet_previous_year_questions"
 EMBEDDING_MODEL = "gemini-embedding-2"
 EMBEDDING_DIMENSIONS = 768
@@ -22,6 +20,10 @@ SENTENCE_TRANSFORMER_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 
 def _embed_texts(texts: list[str]) -> list[list[float]]:
+    from google.genai import types
+
+    from chatbot.gemini_client import get_gemini_client
+
     client = get_gemini_client()
     prepared = [f"task: semantic retrieval | query: {text}" for text in texts]
     result = client.models.embed_content(
@@ -40,24 +42,31 @@ class GeminiEmbeddingFunction(EmbeddingFunction):
 def embedding_provider() -> str:
     import os
 
-    return os.getenv("EMBEDDING_PROVIDER", "gemini").strip().lower()
+    return os.getenv("EMBEDDING_PROVIDER", "local").strip().lower()
 
 
 def get_embedding_function() -> EmbeddingFunction:
-    if embedding_provider() != "sentence_transformers":
+    provider = embedding_provider()
+    if provider == "gemini":
         return GeminiEmbeddingFunction()
 
     try:
         from chromadb.utils import embedding_functions
     except ImportError as exc:
         raise RuntimeError(
-            "Sentence Transformers mode needs `sentence-transformers`. "
-            "Install it and set EMBEDDING_PROVIDER=sentence_transformers."
+            "Local embedding mode needs ChromaDB embedding functions."
         ) from exc
 
-    return embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name=SENTENCE_TRANSFORMER_MODEL
-    )
+    if provider == "sentence_transformers":
+        return embedding_functions.SentenceTransformerEmbeddingFunction(
+            model_name=SENTENCE_TRANSFORMER_MODEL
+        )
+
+    from chromadb.utils.embedding_functions.onnx_mini_lm_l6_v2 import ONNXMiniLM_L6_V2
+
+    LOCAL_EMBEDDING_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    ONNXMiniLM_L6_V2.DOWNLOAD_PATH = LOCAL_EMBEDDING_CACHE_DIR.resolve()
+    return embedding_functions.DefaultEmbeddingFunction()
 
 
 def embed_query(text: str) -> list[float]:
@@ -120,10 +129,10 @@ def search(query: str, *, subject: str = "All", chapter: str = "All", k: int = 6
         "where": build_where(subject, chapter),
         "include": ["documents", "metadatas", "distances"],
     }
-    if embedding_provider() == "sentence_transformers":
-        query_kwargs["query_texts"] = [query]
-    else:
+    if embedding_provider() == "gemini":
         query_kwargs["query_embeddings"] = [embed_query(query)]
+    else:
+        query_kwargs["query_texts"] = [query]
 
     results = collection.query(**query_kwargs)
 
