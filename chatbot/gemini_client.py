@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from io import BytesIO
 
 from openai import OpenAI
 
@@ -8,6 +9,7 @@ from openai import OpenAI
 DEFAULT_MODEL = "gemini-2.5-flash"
 DEFAULT_XAI_MODEL = "grok-4.3"
 DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_GROQ_STT_MODEL = "whisper-large-v3-turbo"
 PLACEHOLDER_KEYS = {"your_google_gemini_api_key", "your_google_gemini_api_key_here"}
 XAI_PLACEHOLDER_KEYS = {"your_xai_grok_api_key", "your_xai_grok_api_key_here"}
 GROQ_PLACEHOLDER_KEYS = {"your_groq_api_key", "your_groq_api_key_here"}
@@ -86,6 +88,32 @@ def generate_groq_answer(prompt: str, *, model_name: str | None = None, temperat
     )
     content = response.choices[0].message.content
     return content or "I could not generate a response. Please try rephrasing the question."
+
+
+def transcribe_groq_audio(
+    audio_bytes: bytes,
+    *,
+    language: str | None = None,
+    filename: str = "voice_question.webm",
+) -> str:
+    if not audio_bytes:
+        return ""
+
+    client = get_groq_client()
+    audio_file = BytesIO(audio_bytes)
+    audio_file.name = filename
+    kwargs = {
+        "file": audio_file,
+        "model": os.getenv("GROQ_STT_MODEL", DEFAULT_GROQ_STT_MODEL),
+        "temperature": 0,
+        "response_format": "json",
+        "prompt": "NEET exam question from a student. Preserve formulas, symbols, and subject terms.",
+    }
+    if language:
+        kwargs["language"] = language
+
+    transcription = client.audio.transcriptions.create(**kwargs)
+    return getattr(transcription, "text", "") or ""
 
 
 def generate_answer(prompt: str, *, model_name: str = DEFAULT_MODEL, temperature: float = 0.25) -> str:

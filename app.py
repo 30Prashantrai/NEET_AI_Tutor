@@ -7,9 +7,9 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from dotenv import load_dotenv
-from streamlit_mic_recorder import speech_to_text
+from streamlit_mic_recorder import mic_recorder
 
-from chatbot.gemini_client import generate_answer
+from chatbot.gemini_client import generate_answer, transcribe_groq_audio
 from chatbot.rag import answer_question
 from utils.pdf_loader import pdf_to_chunks, save_uploaded_pdf
 from utils.session_store import (
@@ -26,12 +26,11 @@ from utils.vector_store import add_chunks, collection_stats
 load_dotenv()
 
 
-VOICE_LOCALES = {
-    "English - India": "en-IN",
-    "English - United States": "en-US",
-    "English - United Kingdom": "en-GB",
-    "Hindi - India": "hi-IN",
-    "Nepali - Nepal": "ne-NP",
+VOICE_LANGUAGES = {
+    "Auto detect": "",
+    "English": "en",
+    "Hindi": "hi",
+    "Nepali": "ne",
 }
 
 st.set_page_config(
@@ -154,6 +153,7 @@ def init_state() -> None:
     st.session_state.setdefault("quiz", "")
     st.session_state.setdefault("daily_quiz", "")
     st.session_state.setdefault("voice_question", "")
+    st.session_state.setdefault("voice_audio", None)
 
 
 def api_key_ready() -> bool:
@@ -326,27 +326,45 @@ def submit_question(prompt: str, subject: str, chapter: str, language: str, retr
 def render_voice_input(subject: str, chapter: str, language: str, retrieval_k: int) -> None:
     with st.expander("Voice question", expanded=False):
         st.caption(
-            "Step 1: click Start listening and allow microphone access. "
-            "Step 2: speak your question and stop listening. "
-            "Step 3: check the transcript, then ask."
+            "Record your question, transcribe it with Groq Whisper, then send the transcript."
         )
         col_a, col_b = st.columns([1, 1])
         with col_a:
-            voice_locale_label = st.selectbox("Talk language / accent", list(VOICE_LOCALES.keys()))
+            voice_language_label = st.selectbox("Speech language", list(VOICE_LANGUAGES.keys()))
         with col_b:
-            st.caption("Chrome or Edge on HTTPS works best. Some mobile browsers may not support speech recognition.")
+            st.caption("Allow microphone access. HTTPS deployment works best on phones.")
 
-        transcript = speech_to_text(
-            language=VOICE_LOCALES[voice_locale_label],
-            start_prompt="Start listening",
-            stop_prompt="Stop listening",
-            just_once=False,
+        audio = mic_recorder(
+            start_prompt="Start recording",
+            stop_prompt="Stop recording",
+            just_once=True,
             use_container_width=True,
-            key="voice_stt",
+            format="webm",
+            key="voice_recorder",
         )
-        if transcript:
-            st.session_state.voice_question = transcript
-            st.success("Voice transcript captured. Review it below, then send it.")
+        if audio and audio.get("bytes"):
+            st.session_state.voice_audio = audio
+            st.audio(audio["bytes"], format="audio/webm")
+
+        if st.button("Transcribe recording", use_container_width=True):
+            audio_bytes = (st.session_state.voice_audio or {}).get("bytes")
+            if not audio_bytes:
+                st.warning("No recording found. Click Start recording, speak, then Stop recording.")
+            elif not api_key_ready():
+                st.warning("Add `GROQ_API_KEY` first. Voice transcription uses Groq Whisper.")
+            else:
+                with st.spinner("Transcribing your question..."):
+                    try:
+                        st.session_state.voice_question = transcribe_groq_audio(
+                            audio_bytes,
+                            language=VOICE_LANGUAGES[voice_language_label],
+                        )
+                        if st.session_state.voice_question:
+                            st.success("Transcript ready. Review it below, then ask.")
+                        else:
+                            st.warning("I could not hear a transcript. Try recording again closer to the microphone.")
+                    except Exception as exc:
+                        st.error(f"Could not transcribe audio: {exc}")
 
         st.text_area(
             "Voice transcript",
@@ -358,7 +376,7 @@ def render_voice_input(subject: str, chapter: str, language: str, retrieval_k: i
             if st.session_state.voice_question.strip():
                 submit_question(st.session_state.voice_question, subject, chapter, language, retrieval_k)
             else:
-                st.warning("No voice transcript yet. Click Start listening first, speak, then stop listening.")
+                st.warning("No transcript yet. Record audio and click Transcribe recording first.")
 
 
 def render_chat(subject: str, chapter: str, language: str, retrieval_k: int) -> None:
