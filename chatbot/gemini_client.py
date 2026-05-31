@@ -7,12 +7,14 @@ from openai import OpenAI
 
 DEFAULT_MODEL = "gemini-2.5-flash"
 DEFAULT_XAI_MODEL = "grok-4.3"
+DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
 PLACEHOLDER_KEYS = {"your_google_gemini_api_key", "your_google_gemini_api_key_here"}
 XAI_PLACEHOLDER_KEYS = {"your_xai_grok_api_key", "your_xai_grok_api_key_here"}
+GROQ_PLACEHOLDER_KEYS = {"your_groq_api_key", "your_groq_api_key_here"}
 
 
 def llm_provider() -> str:
-    return os.getenv("LLM_PROVIDER", "xai").strip().lower()
+    return os.getenv("LLM_PROVIDER", "groq").strip().lower()
 
 
 def get_gemini_client(api_key: str | None = None):
@@ -29,6 +31,13 @@ def get_xai_client(api_key: str | None = None) -> OpenAI:
     if not key or key.strip() in XAI_PLACEHOLDER_KEYS:
         raise ValueError("Missing XAI_API_KEY. Add it to Streamlit secrets or your .env file.")
     return OpenAI(api_key=key, base_url=os.getenv("XAI_BASE_URL", "https://api.x.ai/v1"))
+
+
+def get_groq_client(api_key: str | None = None) -> OpenAI:
+    key = api_key or os.getenv("GROQ_API_KEY")
+    if not key or key.strip() in GROQ_PLACEHOLDER_KEYS:
+        raise ValueError("Missing GROQ_API_KEY. Add it to Streamlit secrets or your .env file.")
+    return OpenAI(api_key=key, base_url=os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1"))
 
 
 def generate_gemini_answer(prompt: str, *, model_name: str = DEFAULT_MODEL, temperature: float = 0.25) -> str:
@@ -63,7 +72,26 @@ def generate_xai_answer(prompt: str, *, model_name: str | None = None, temperatu
     return content or "I could not generate a response. Please try rephrasing the question."
 
 
+def generate_groq_answer(prompt: str, *, model_name: str | None = None, temperature: float = 0.25) -> str:
+    client = get_groq_client()
+    response = client.chat.completions.create(
+        model=model_name or os.getenv("GROQ_MODEL", DEFAULT_GROQ_MODEL),
+        messages=[
+            {"role": "system", "content": "You are NEET AI Tutor, an expert NEET teacher."},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=temperature,
+        top_p=0.9,
+        max_tokens=2200,
+    )
+    content = response.choices[0].message.content
+    return content or "I could not generate a response. Please try rephrasing the question."
+
+
 def generate_answer(prompt: str, *, model_name: str = DEFAULT_MODEL, temperature: float = 0.25) -> str:
-    if llm_provider() == "gemini":
+    provider = llm_provider()
+    if provider == "gemini":
         return generate_gemini_answer(prompt, model_name=model_name, temperature=temperature)
-    return generate_xai_answer(prompt, temperature=temperature)
+    if provider == "xai":
+        return generate_xai_answer(prompt, temperature=temperature)
+    return generate_groq_answer(prompt, temperature=temperature)

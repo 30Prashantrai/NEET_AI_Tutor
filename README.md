@@ -13,7 +13,7 @@ The app does **not** scrape copyrighted websites. It only learns from user-uploa
 - Generate local Chroma embeddings by default, with optional Sentence Transformers or Gemini embedding support.
 - Store vectors in ChromaDB.
 - Retrieve similar NEET questions and explanations.
-- Send retrieved context to Grok/xAI for teacher-style answers.
+- Send retrieved context to GroqCloud for teacher-style answers.
 - Show step-by-step solutions, formulas, wrong-option analysis, shortcuts, confidence, and source references.
 - Support English, Hindi, and Nepali explanations.
 - Ask by voice with language/accent selection for English India, English US, English UK, Hindi India, and Nepali Nepal.
@@ -47,9 +47,9 @@ pip install -r requirements.txt
 Create `.env`:
 
 ```env
-XAI_API_KEY=your_xai_grok_api_key
-LLM_PROVIDER=xai
-XAI_MODEL=grok-4.3
+GROQ_API_KEY=your_groq_api_key
+LLM_PROVIDER=groq
+GROQ_MODEL=llama-3.3-70b-versatile
 EMBEDDING_PROVIDER=local
 ```
 
@@ -90,9 +90,9 @@ The default local mode uses Chroma's ONNX MiniLM embedding function, so RAG retr
 7. Add secrets:
 
 ```toml
-XAI_API_KEY = "your_xai_grok_api_key"
-LLM_PROVIDER = "xai"
-XAI_MODEL = "grok-4.3"
+GROQ_API_KEY = "your_groq_api_key"
+LLM_PROVIDER = "groq"
+GROQ_MODEL = "llama-3.3-70b-versatile"
 EMBEDDING_PROVIDER = "local"
 ```
 
@@ -114,7 +114,7 @@ EMBEDDING_PROVIDER = "local"
 ## Notes
 
 - Upload only documents you have permission to use.
-- xAI/Grok API access may require billing or trial credits in the xAI console. It is not guaranteed to be unlimited free usage.
+- GroqCloud has a free tier with rate limits. Check your GroqCloud limits page for the current requests/tokens available to your account.
 - Streamlit Cloud file storage may reset on redeploy, so keep your original PDFs available.
 - Large PDF sets may take time to embed on first upload because Chroma may download or initialize its local embedding model.
 - For production at school scale, use persistent object storage and a hosted vector database.

@@ -157,16 +157,28 @@ def init_state() -> None:
 
 
 def api_key_ready() -> bool:
-    provider = os.getenv("LLM_PROVIDER", "xai").strip().lower()
+    provider = os.getenv("LLM_PROVIDER", "groq").strip().lower()
     if provider == "gemini":
         key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or get_streamlit_secret("GEMINI_API_KEY")
         return bool(key and key.strip() not in {"your_google_gemini_api_key", "your_google_gemini_api_key_here"})
-    key = os.getenv("XAI_API_KEY") or os.getenv("GROK_API_KEY") or get_streamlit_secret("XAI_API_KEY")
-    return bool(key and key.strip() not in {"your_xai_grok_api_key", "your_xai_grok_api_key_here"})
+    if provider == "xai":
+        key = os.getenv("XAI_API_KEY") or os.getenv("GROK_API_KEY") or get_streamlit_secret("XAI_API_KEY")
+        return bool(key and key.strip() not in {"your_xai_grok_api_key", "your_xai_grok_api_key_here"})
+    key = os.getenv("GROQ_API_KEY") or get_streamlit_secret("GROQ_API_KEY")
+    return bool(key and key.strip() not in {"your_groq_api_key", "your_groq_api_key_here"})
 
 
 def sync_secret_to_env() -> None:
-    for name in ("GEMINI_API_KEY", "XAI_API_KEY", "GROK_API_KEY", "LLM_PROVIDER", "XAI_MODEL", "EMBEDDING_PROVIDER"):
+    for name in (
+        "GEMINI_API_KEY",
+        "XAI_API_KEY",
+        "GROK_API_KEY",
+        "GROQ_API_KEY",
+        "LLM_PROVIDER",
+        "XAI_MODEL",
+        "GROQ_MODEL",
+        "EMBEDDING_PROVIDER",
+    ):
         secret_value = get_streamlit_secret(name)
         if secret_value and not os.getenv(name):
             os.environ[name] = secret_value
@@ -283,7 +295,7 @@ def submit_question(prompt: str, subject: str, chapter: str, language: str, retr
         st.markdown(prompt)
 
     if not api_key_ready():
-        answer = "Add `XAI_API_KEY` in `.streamlit/secrets.toml` or Streamlit Cloud secrets to enable Grok answers."
+        answer = "Add `GROQ_API_KEY` in `.streamlit/secrets.toml` or Streamlit Cloud secrets to enable free-tier GroqCloud answers."
         st.session_state.messages.append({"role": "assistant", "content": answer})
         with st.chat_message("assistant"):
             st.warning(answer)
@@ -367,7 +379,7 @@ def render_mock_test(subject: str, chapter: str, language: str) -> None:
     st.subheader("Daily NEET Quiz")
     if st.button("Generate today's 5-question quiz", use_container_width=True):
         if not api_key_ready():
-            st.warning("Add `XAI_API_KEY` to generate the daily quiz.")
+            st.warning("Add `GROQ_API_KEY` to generate the daily quiz.")
         else:
             prompt = f"""
 Create a daily NEET quiz with 5 MCQs for quick revision.
@@ -392,7 +404,7 @@ Use NCERT-first explanations. Include answer key, why wrong options are wrong, a
 
     if st.button("Generate mock test", use_container_width=True):
         if not api_key_ready():
-            st.warning("Add `XAI_API_KEY` to generate tests.")
+            st.warning("Add `GROQ_API_KEY` to generate tests.")
             return
         prompt = f"""
 Generate a NEET mock test with {count} MCQs.
