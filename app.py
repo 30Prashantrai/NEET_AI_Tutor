@@ -41,104 +41,179 @@ st.set_page_config(
 )
 
 
-def inject_css() -> None:
+def inject_css(theme_mode: str) -> None:
+    dark = theme_mode == "Dark"
+    colors = {
+        "app_bg": "#080b12" if dark else "#f6f8fc",
+        "surface": "#101624" if dark else "#ffffff",
+        "surface_2": "#0b1020" if dark else "#eef4fb",
+        "text": "#edf6ff" if dark else "#0b1220",
+        "muted": "#a8b3c7" if dark else "#526070",
+        "border": "rgba(148, 163, 184, 0.18)" if dark else "rgba(15, 23, 42, 0.12)",
+        "accent": "#38bdf8" if dark else "#0369a1",
+        "accent_2": "#22c55e" if dark else "#047857",
+        "glow": "rgba(56, 189, 248, 0.18)" if dark else "rgba(14, 165, 233, 0.16)",
+        "source_bg": "rgba(56, 189, 248, 0.07)" if dark else "rgba(14, 165, 233, 0.08)",
+    }
     st.markdown(
-        """
+        f"""
         <style>
-        :root {
-            color-scheme: dark;
-        }
-        .block-container {
+        :root {{
+            color-scheme: {"dark" if dark else "light"};
+        }}
+        .stApp {{
+            background:
+                radial-gradient(circle at top left, {colors["glow"]}, transparent 34rem),
+                {colors["app_bg"]};
+            color: {colors["text"]};
+        }}
+        .block-container {{
             max-width: 1120px;
             padding-top: 1rem;
             padding-bottom: 5rem;
-        }
-        [data-testid="stSidebar"] {
-            background: #0b1020;
-            border-right: 1px solid rgba(148, 163, 184, 0.18);
-        }
-        .neet-header {
+        }}
+        [data-testid="stSidebar"] {{
+            background: {colors["surface_2"]};
+            border-right: 1px solid {colors["border"]};
+        }}
+        [data-testid="stSidebar"] * {{
+            color: {colors["text"]};
+        }}
+        .neet-header {{
             display: flex;
             justify-content: space-between;
             gap: 1rem;
             align-items: center;
-            padding: 1rem 0 0.5rem;
-        }
-        .neet-title {
-            font-size: 1.9rem;
+            padding: 1rem 0 0.75rem;
+        }}
+        .brand-lockup {{
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            min-width: 0;
+        }}
+        .brand-mark {{
+            width: 58px;
+            height: 58px;
+            flex: 0 0 58px;
+            border-radius: 16px;
+            display: grid;
+            place-items: center;
+            font-weight: 900;
+            color: #ffffff;
+            background:
+                linear-gradient(135deg, {colors["accent"]}, {colors["accent_2"]});
+            box-shadow: 0 14px 34px {colors["glow"]};
+            border: 1px solid rgba(255, 255, 255, 0.24);
+        }}
+        .brand-eyebrow {{
+            color: {colors["accent"]};
+            font-size: 0.76rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin: 0 0 0.12rem;
+        }}
+        .neet-title {{
+            font-size: 2rem;
             font-weight: 800;
             margin: 0;
             letter-spacing: 0;
-        }
-        .neet-subtitle {
+            color: {colors["text"]};
+        }}
+        .neet-subtitle {{
             margin: 0.15rem 0 0;
-            color: #a8b3c7;
+            color: {colors["muted"]};
             font-size: 0.98rem;
-        }
-        .metric-row {
+        }}
+        .theme-pill {{
+            border: 1px solid {colors["border"]};
+            background: {colors["surface"]};
+            color: {colors["muted"]};
+            border-radius: 999px;
+            padding: 0.45rem 0.7rem;
+            font-size: 0.82rem;
+            white-space: nowrap;
+        }}
+        .metric-row {{
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 0.75rem;
             margin: 0.75rem 0 1rem;
-        }
-        .metric-tile {
-            border: 1px solid rgba(148, 163, 184, 0.18);
-            background: #101624;
+        }}
+        .metric-tile {{
+            border: 1px solid {colors["border"]};
+            background: {colors["surface"]};
             border-radius: 8px;
             padding: 0.75rem;
-        }
-        .metric-tile strong {
+            box-shadow: 0 10px 26px rgba(15, 23, 42, {"0.18" if dark else "0.06"});
+        }}
+        .metric-tile strong {{
             display: block;
             font-size: 1.25rem;
-            color: #e8f7ff;
-        }
-        .metric-tile span {
-            color: #9aa8bd;
+            color: {colors["text"]};
+        }}
+        .metric-tile span {{
+            color: {colors["muted"]};
             font-size: 0.82rem;
-        }
-        .source-box {
-            border: 1px solid rgba(56, 189, 248, 0.22);
-            background: rgba(56, 189, 248, 0.07);
+        }}
+        .source-box {{
+            border: 1px solid {colors["border"]};
+            background: {colors["source_bg"]};
             border-radius: 8px;
             padding: 0.7rem;
             margin: 0.45rem 0;
             font-size: 0.9rem;
-        }
-        .source-box b {
-            color: #7dd3fc;
-        }
-        .small-note {
-            color: #9aa8bd;
+            color: {colors["text"]};
+        }}
+        .source-box b {{
+            color: {colors["accent"]};
+        }}
+        .small-note {{
+            color: {colors["muted"]};
             font-size: 0.88rem;
-        }
-        .stButton > button, .stDownloadButton > button {
+        }}
+        .stButton > button, .stDownloadButton > button {{
             border-radius: 8px;
-        }
-        [data-testid="stChatMessage"] {
+            border: 1px solid {colors["border"]};
+        }}
+        [data-testid="stChatMessage"] {{
             border-radius: 8px;
-            border: 1px solid rgba(148, 163, 184, 0.14);
-        }
-        @media (max-width: 760px) {
-            .block-container {
+            border: 1px solid {colors["border"]};
+            background: {colors["surface"]};
+        }}
+        div[data-baseweb="select"] > div,
+        textarea,
+        input {{
+            border-color: {colors["border"]} !important;
+        }}
+        @media (max-width: 760px) {{
+            .block-container {{
                 padding-left: 0.9rem;
                 padding-right: 0.9rem;
                 padding-top: 0.5rem;
-            }
-            .neet-header {
+            }}
+            .neet-header {{
                 align-items: flex-start;
                 flex-direction: column;
-            }
-            .neet-title {
+            }}
+            .brand-mark {{
+                width: 50px;
+                height: 50px;
+                flex-basis: 50px;
+                border-radius: 14px;
+            }}
+            .neet-title {{
                 font-size: 1.45rem;
-            }
-            .metric-row {
+            }}
+            .metric-row {{
                 grid-template-columns: 1fr;
-            }
-            [data-testid="stChatInput"] {
+            }}
+            [data-testid="stChatInput"] {{
                 left: 0;
                 right: 0;
-            }
-        }
+            }}
+        }}
         </style>
         """,
         unsafe_allow_html=True,
@@ -146,6 +221,7 @@ def inject_css() -> None:
 
 
 def init_state() -> None:
+    st.session_state.setdefault("theme_mode", "Dark")
     st.session_state.setdefault("messages", [])
     st.session_state.setdefault("last_answer", "")
     st.session_state.setdefault("last_question", "")
@@ -177,6 +253,7 @@ def sync_secret_to_env() -> None:
         "LLM_PROVIDER",
         "XAI_MODEL",
         "GROQ_MODEL",
+        "GROQ_STT_MODEL",
         "EMBEDDING_PROVIDER",
     ):
         secret_value = get_streamlit_secret(name)
@@ -193,12 +270,17 @@ def get_streamlit_secret(name: str) -> str:
 
 def render_header(stats: dict) -> None:
     st.markdown(
-        """
+        f"""
         <div class="neet-header">
-            <div>
-                <h1 class="neet-title">NEET AI Tutor</h1>
-                <p class="neet-subtitle">ChatGPT-style mentor for NEET PYQs, NCERT concepts, formulas, and shortcuts.</p>
+            <div class="brand-lockup">
+                <div class="brand-mark">PR</div>
+                <div>
+                    <p class="brand-eyebrow">Prashant Rai</p>
+                    <h1 class="neet-title">NEET AI Tutor</h1>
+                    <p class="neet-subtitle">ChatGPT-style mentor for NEET PYQs, NCERT concepts, formulas, and shortcuts.</p>
+                </div>
             </div>
+            <div class="theme-pill">{st.session_state.theme_mode} mode</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -217,6 +299,13 @@ def render_header(stats: dict) -> None:
 
 def render_sidebar(stats: dict) -> tuple[str, str, str, int]:
     with st.sidebar:
+        st.markdown("### Prashant Rai NEET AI Tutor")
+        st.segmented_control(
+            "Theme",
+            ["Dark", "Light"],
+            key="theme_mode",
+        )
+        st.divider()
         st.subheader("Study Filters")
         subject = st.selectbox("Subject", ["All", "Physics", "Chemistry", "Biology"])
         chapter_options = ["All"] + stats["chapters"]
@@ -263,7 +352,7 @@ def render_sidebar(stats: dict) -> tuple[str, str, str, int]:
             else:
                 st.info("Ask a question first.")
 
-        st.caption("Voice input can be added with a browser speech component later; the core RAG flow is ready.")
+        st.caption("Voice recording uses Groq Whisper. On phones, allow microphone access in the browser.")
         return subject, chapter, language, retrieval_k
 
 
@@ -470,8 +559,8 @@ def render_saved_and_analytics() -> None:
 
 def main() -> None:
     sync_secret_to_env()
-    inject_css()
     init_state()
+    inject_css(st.session_state.theme_mode)
 
     stats = collection_stats()
     subject, chapter, language, retrieval_k = render_sidebar(stats)

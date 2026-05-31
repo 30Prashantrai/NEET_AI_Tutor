@@ -18,7 +18,7 @@ The app does **not** scrape copyrighted websites. It only learns from user-uploa
 - Support English, Hindi, and Nepali explanations.
 - Ask by voice: record audio, transcribe with Groq Whisper, review/edit the transcript, then send.
 - Provide chat history, bookmarks, favorite chats, daily quiz, mock tests, analytics, and leaderboard.
-- Use a dark, mobile-responsive Streamlit UI.
+- Use a branded Prashant Rai NEET AI Tutor interface with dark and light modes.
 
 ## Folder Structure
 
@@ -49,7 +49,8 @@ Create `.env`:
 ```env
 GROQ_API_KEY=your_groq_api_key
 LLM_PROVIDER=groq
-GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_MODEL=llama-3.1-8b-instant
+GROQ_STT_MODEL=whisper-large-v3-turbo
 EMBEDDING_PROVIDER=local
 ```
 
@@ -92,7 +93,7 @@ The default local mode uses Chroma's ONNX MiniLM embedding function, so RAG retr
 ```toml
 GROQ_API_KEY = "your_groq_api_key"
 LLM_PROVIDER = "groq"
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "llama-3.1-8b-instant"
 GROQ_STT_MODEL = "whisper-large-v3-turbo"
 EMBEDDING_PROVIDER = "local"
 ```
